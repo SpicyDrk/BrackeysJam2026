@@ -7,7 +7,7 @@ public class PlayerController : MonoBehaviour
     [Header("Movement Settings")]
     [SerializeField] private float walkSpeed = 2.5f;
     [SerializeField] private float sprintSpeed = 4.5f;
-    [SerializeField] private float gravity = -15f;
+    [SerializeField] private float gravity = -25f;
     [SerializeField] private float groundedGravity = -2f;
 
     [Header("Look Settings")]

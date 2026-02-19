@@ -3,7 +3,17 @@ guid: 0599c28214f84f744b0aa851a0c68f1d
 ModelImporter:
   serializedVersion: 24200
   internalIDToNameTable: []
-  externalObjects: {}
+  externalObjects:
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: LightPanel
+    second: {fileID: 2100000, guid: d75086ad7d64be44f9c98fbba103a878, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: Material.001
+    second: {fileID: 2100000, guid: 5d185ac4aeecd594198103b173c058a1, type: 2}
   materials:
     materialImportMode: 2
     materialName: 0
