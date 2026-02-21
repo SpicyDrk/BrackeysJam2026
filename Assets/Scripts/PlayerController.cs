@@ -85,6 +85,13 @@ public class PlayerController : MonoBehaviour
         float speed = isSprinting ? sprintSpeed : walkSpeed;
 
         controller.Move(moveDirection * speed * Time.deltaTime);
+
+        // Notify sound manager about movement state
+        bool isMoving = input.magnitude > 0.1f && isGrounded;
+        if (SoundManager.Instance != null)
+        {
+            SoundManager.Instance.SetMovementState(isMoving, isSprinting && isMoving);
+        }
     }
 
     private void Look()

@@ -21,10 +21,10 @@ public class HallwaySegment : MonoBehaviour
     public PropSpawnPoint doorSpawn;
     [Tooltip("2 large sign spawn points")]
     public PropSpawnPoint[] largeSignSpawns = new PropSpawnPoint[2];
-    [Tooltip("3 small sign spawn points (vertical stack)")]
-    public PropSpawnPoint[] smallSignSpawns = new PropSpawnPoint[3];
-    [Tooltip("Single plant spawn point")]
-    public PropSpawnPoint plantSpawn;
+    [Tooltip("4 small sign spawn points (vertical stack)")]
+    public PropSpawnPoint[] smallSignSpawns = new PropSpawnPoint[4];
+    [Tooltip("2 plant spawn points")]
+    public PropSpawnPoint[] plantSpawns = new PropSpawnPoint[2];
 
     [Header("Current Configuration")]
     public HallwayConfiguration currentConfig;
@@ -51,12 +51,18 @@ public class HallwaySegment : MonoBehaviour
         doorSpawn = allSpawns.FirstOrDefault(s => s.propType == PropSpawnPoint.PropType.Door);
         largeSignSpawns = allSpawns.Where(s => s.propType == PropSpawnPoint.PropType.LargeSign).ToArray();
         smallSignSpawns = allSpawns.Where(s => s.propType == PropSpawnPoint.PropType.SmallSign).ToArray();
-        plantSpawn = allSpawns.FirstOrDefault(s => s.propType == PropSpawnPoint.PropType.Plant);
+        plantSpawns = allSpawns.Where(s => s.propType == PropSpawnPoint.PropType.Plant).ToArray();
     }
 
     public void ApplyConfiguration(HallwayConfiguration config)
     {
         currentConfig = config;
+
+        Debug.Log($"[HallwaySegment] Applying configuration:");
+        Debug.Log($"  Door: variant {config.doorVariant}");
+        Debug.Log($"  Large Signs: [{string.Join(", ", config.largeSignVariants)}]");
+        Debug.Log($"  Small Signs: [{string.Join(", ", config.smallSignTexts)}]");
+        Debug.Log($"  Plants: [{string.Join(", ", config.plantVariants)}]");
 
         // Apply door variant
         if (doorSpawn != null && config.doorVariant >= 0 && config.doorVariant < config.doorPrefabs.Length)
@@ -81,33 +87,46 @@ public class HallwaySegment : MonoBehaviour
         {
             if (config.smallSignPrefab != null)
             {
-                GameObject signObj = Instantiate(config.smallSignPrefab, 
-                    smallSignSpawns[i].transform.position, 
-                    smallSignSpawns[i].transform.rotation, 
-                    smallSignSpawns[i].transform);
+                // Use SpawnProp to properly track and clear old signs
+                smallSignSpawns[i].SpawnProp(config.smallSignPrefab);
                 
-                // Set text on the sign (assumes TextMesh or TextMeshPro component)
-                var textMesh = signObj.GetComponentInChildren<TMPro.TextMeshPro>();
-                if (textMesh != null)
+                // Set text on the newly spawned sign
+                GameObject signObj = smallSignSpawns[i].GetSpawnedProp();
+                if (signObj != null)
                 {
-                    textMesh.text = config.smallSignTexts[i];
-                }
-                else
-                {
-                    var legacyText = signObj.GetComponentInChildren<TextMesh>();
-                    if (legacyText != null)
+                    var textMesh = signObj.GetComponentInChildren<TMPro.TextMeshPro>();
+                    if (textMesh != null)
                     {
-                        legacyText.text = config.smallSignTexts[i];
+                        textMesh.text = config.smallSignTexts[i];
+                    }
+                    else
+                    {
+                        var legacyText = signObj.GetComponentInChildren<TextMesh>();
+                        if (legacyText != null)
+                        {
+                            legacyText.text = config.smallSignTexts[i];
+                        }
                     }
                 }
             }
         }
 
-        // Apply plant variant
-        if (plantSpawn != null && config.plantVariant >= 0 && config.plantVariant < config.plantPrefabs.Length)
+        // Apply plants
+        for (int i = 0; i < plantSpawns.Length && i < config.plantVariants.Length; i++)
         {
-            plantSpawn.SpawnProp(config.plantPrefabs[config.plantVariant]);
-            plantSpawn.variantIndex = config.plantVariant;
+            int variantIndex = config.plantVariants[i];
+            if (variantIndex >= 0 && variantIndex < config.plantPrefabs.Length)
+            {
+                GameObject plantPrefab = config.plantPrefabs[variantIndex];
+                string plantName = plantPrefab != null ? plantPrefab.name : "null";
+                Debug.Log($"[HallwaySegment] Spawning plant [{i}]: variant {variantIndex} ({plantName})");
+                plantSpawns[i].SpawnProp(plantPrefab);
+                plantSpawns[i].variantIndex = variantIndex;
+            }
+            else
+            {
+                Debug.LogWarning($"[HallwaySegment] Plant [{i}]: Invalid variant {variantIndex} (valid range: 0-{config.plantPrefabs.Length - 1})");
+            }
         }
     }
 
@@ -121,7 +140,8 @@ public class HallwaySegment : MonoBehaviour
         foreach (var spawn in smallSignSpawns)
             spawn?.ClearProp();
         
-        plantSpawn?.ClearProp();
+        foreach (var spawn in plantSpawns)
+            spawn?.ClearProp();
     }
 
     public Vector3 GetStartPosition() => segmentStart != null ? segmentStart.position : transform.position;

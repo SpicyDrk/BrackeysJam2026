@@ -17,11 +17,11 @@ public class HallwayConfiguration
 
     [Header("Small Sign Configuration")]
     public GameObject smallSignPrefab; // Base small sign prefab
-    public string[] smallSignTexts = new string[3]; // Text for 3 signs
+    public string[] smallSignTexts = new string[4]; // Text for 4 signs
 
     [Header("Plant Configuration")]
     public GameObject[] plantPrefabs = new GameObject[4]; // 4 states: empty + 3 plants
-    public int plantVariant = 0; // Which plant state (0-3, 0 = empty)
+    public int[] plantVariants = new int[2]; // Which plant state for each of 2 spawn points (0-3, 0 = empty)
 
     /// <summary>
     /// Creates a copy of this configuration
@@ -40,7 +40,7 @@ public class HallwayConfiguration
         clone.smallSignTexts = (string[])smallSignTexts.Clone();
         
         clone.plantPrefabs = (GameObject[])plantPrefabs.Clone();
-        clone.plantVariant = plantVariant;
+        clone.plantVariants = (int[])plantVariants.Clone();
         
         return clone;
     }
@@ -69,8 +69,12 @@ public class HallwayConfiguration
             if (smallSignTexts[i] != other.smallSignTexts[i]) return false;
         }
 
-        // Check plant
-        if (plantVariant != other.plantVariant) return false;
+        // Check plants
+        if (plantVariants.Length != other.plantVariants.Length) return false;
+        for (int i = 0; i < plantVariants.Length; i++)
+        {
+            if (plantVariants[i] != other.plantVariants[i]) return false;
+        }
 
         return true;
     }
@@ -85,33 +89,79 @@ public class HallwayConfiguration
         // Randomly pick ONE thing to change
         int changeType = Random.Range(0, 4);
 
+        Debug.Log($"[HallwayConfig] Creating variation - changeType: {changeType}");
+
         switch (changeType)
         {
             case 0: // Change door
-                variation.doorVariant = (variation.doorVariant + 1) % variation.doorPrefabs.Length;
+                int oldDoor = variation.doorVariant;
+                variation.doorVariant = GetDifferentVariant(variation.doorVariant, variation.doorPrefabs.Length);
+                Debug.Log($"[HallwayConfig] Changed DOOR: {oldDoor} -> {variation.doorVariant}");
                 break;
 
             case 1: // Change a large sign
                 int signIndex = Random.Range(0, variation.largeSignVariants.Length);
-                variation.largeSignVariants[signIndex] = Random.Range(0, variation.largeSignPrefabs.Length);
+                int oldSign = variation.largeSignVariants[signIndex];
+                variation.largeSignVariants[signIndex] = GetDifferentVariant(oldSign, variation.largeSignPrefabs.Length);
+                Debug.Log($"[HallwayConfig] Changed LARGE SIGN [{signIndex}]: {oldSign} -> {variation.largeSignVariants[signIndex]}");
                 break;
 
             case 2: // Change a small sign text
                 int textIndex = Random.Range(0, variation.smallSignTexts.Length);
-                variation.smallSignTexts[textIndex] = GenerateRandomSignText();
+                string oldText = variation.smallSignTexts[textIndex];
+                variation.smallSignTexts[textIndex] = GenerateDifferentSignText(oldText);
+                Debug.Log($"[HallwayConfig] Changed SMALL SIGN [{textIndex}]: '{oldText}' -> '{variation.smallSignTexts[textIndex]}'");
                 break;
 
-            case 3: // Change plant
-                variation.plantVariant = Random.Range(0, variation.plantPrefabs.Length);
+            case 3: // Change a plant
+                int plantIndex = Random.Range(0, variation.plantVariants.Length);
+                int oldPlant = variation.plantVariants[plantIndex];
+                variation.plantVariants[plantIndex] = GetDifferentVariant(oldPlant, variation.plantPrefabs.Length);
+                Debug.Log($"[HallwayConfig] Changed PLANT [{plantIndex}]: {oldPlant} -> {variation.plantVariants[plantIndex]} (max: {variation.plantPrefabs.Length - 1})");
                 break;
         }
 
         return variation;
     }
 
-    private static string GenerateRandomSignText()
+    /// <summary>
+    /// Gets a random variant index that's different from the current one
+    /// </summary>
+    private static int GetDifferentVariant(int currentVariant, int totalVariants)
     {
-        string[] words = { "EXIT", "ENTRANCE", "AUTHORIZED", "PERSONNEL", "ONLY", "AREA", "RESTRICTED", "ZONE", "A", "B", "C" };
-        return words[Random.Range(0, words.Length)];
+        if (totalVariants <= 1)
+        {
+            Debug.LogWarning($"[HallwayConfig] Cannot get different variant - only {totalVariants} available!");
+            return currentVariant;
+        }
+
+        // Use modulo trick to guarantee a different value
+        // For example: if current=1 and total=4, we pick from [0,1,2] then add 1 and mod 4 to get [1,2,3,0]
+        int offset = Random.Range(1, totalVariants);
+        return (currentVariant + offset) % totalVariants;
+    }
+
+    /// <summary>
+    /// Generates a random sign text that's different from the current one
+    /// </summary>
+    private static string GenerateDifferentSignText(string currentText)
+    {
+        string[] words = { "Entrance", "Parks Dept. >", "", "Dog Storage", "RESTRICTED", "Otter Zone", "B Batteries", "DiceySporks >" };
+        
+        if (words.Length <= 1)
+        {
+            return words[0];
+        }
+
+        // Keep generating until we get a different text
+        string newText;
+        int attempts = 0;
+        do
+        {
+            newText = words[Random.Range(0, words.Length)];
+            attempts++;
+        } while (newText == currentText && attempts < 20);
+
+        return newText;
     }
 }

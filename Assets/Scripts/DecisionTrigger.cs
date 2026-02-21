@@ -1,54 +1,76 @@
 using UnityEngine;
 
 /// <summary>
-/// Placed at the end of the straight section (before the exit curve).
-/// Detects if player continues forward or turns back.
+/// Placed in the middle segment between the two turns.
+/// If player reaches this point = went forward.
+/// Triggers teleport immediately on entry.
 /// </summary>
+[RequireComponent(typeof(BoxCollider))]
 public class DecisionTrigger : MonoBehaviour
 {
     [Header("Detection Settings")]
-    [SerializeField] private float forwardThreshold = 3f; // Distance to count as "went forward"
     [SerializeField] private bool debugMode = true;
 
-    private bool hasDecided = false;
-    private Vector3 playerEntryPosition;
-    private Vector3 playerEntryForward;
+    private bool decisionMade = false;
 
     private void OnTriggerEnter(Collider other)
     {
-        if (other.CompareTag("Player") && !hasDecided)
+        Log($"Trigger entered by: {other.gameObject.name}, Tag: {other.tag}");
+        
+        if (other.CompareTag("Player") && !decisionMade)
         {
-            playerEntryPosition = other.transform.position;
-            playerEntryForward = transform.forward;
-            Log("Player entered decision zone");
-            
-            HallwayManager.Instance?.OnPlayerReachedDecisionPoint();
+            Log("Player detected! Triggering forward decision.");
+            // Player reached this point = they went forward through the curves
+            OnPlayerDecision(wentForward: true);
+        }
+        else if (!other.CompareTag("Player"))
+        {
+            Log($"Not player - wrong tag. Expected 'Player', got '{other.tag}'");
+        }
+        else if (decisionMade)
+        {
+            Log("Decision already made, ignoring trigger");
         }
     }
 
-    private void OnTriggerExit(Collider other)
+    /// <summary>
+    /// Call this method when player turns back (e.g., from another trigger or detection system)
+    /// </summary>
+    public void TriggerBackwardDecision()
     {
-        if (other.CompareTag("Player") && !hasDecided)
+        if (!decisionMade)
         {
-            Vector3 exitPosition = other.transform.position;
-            Vector3 displacement = exitPosition - playerEntryPosition;
-            float forwardDistance = Vector3.Dot(displacement, playerEntryForward);
-
-            bool wentForward = forwardDistance > 0;
-
-            Log($"Player exited: {(wentForward ? "FORWARD" : "BACKWARD")} (distance: {forwardDistance:F2})");
-
-            hasDecided = true;
-            HallwayManager.Instance?.OnPlayerDecision(wentForward);
-
-            // Reset after delay
-            Invoke(nameof(ResetDecision), 2f);
+            OnPlayerDecision(wentForward: false);
         }
+    }
+
+    private void OnPlayerDecision(bool wentForward)
+    {
+        if (decisionMade) return;
+        
+        decisionMade = true;
+
+        Log($"Player chose: {(wentForward ? "FORWARD" : "TURN BACK")}");
+
+        // Notify HallwayManager
+        if (HallwayManager.Instance != null)
+        {
+            Log("Notifying HallwayManager...");
+            HallwayManager.Instance.OnPlayerDecision(wentForward);
+        }
+        else
+        {
+            Debug.LogError("[DecisionTrigger] HallwayManager.Instance is NULL! Cannot notify.");
+        }
+
+        // Reset after teleport completes
+        Invoke(nameof(ResetDecision), 1f);
     }
 
     private void ResetDecision()
     {
-        hasDecided = false;
+        decisionMade = false;
+        Log("Decision trigger reset - ready for next loop");
     }
 
     private void Log(string message)
@@ -59,7 +81,11 @@ public class DecisionTrigger : MonoBehaviour
 
     private void OnDrawGizmos()
     {
-        Gizmos.color = Color.yellow;
-        Gizmos.DrawWireCube(transform.position, GetComponent<BoxCollider>()?.size ?? Vector3.one);
+        Gizmos.color = Color.green; // Green = forward trigger
+        BoxCollider box = GetComponent<BoxCollider>();
+        if (box != null)
+        {
+            Gizmos.DrawWireCube(transform.position, box.size);
+        }
     }
 }

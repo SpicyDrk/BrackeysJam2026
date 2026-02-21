@@ -10,7 +10,7 @@ GameObject:
   m_Component:
   - component: {fileID: 6325271011871373480}
   m_Layer: 0
-  m_Name: StraitghtSegment
+  m_Name: Hallway
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0

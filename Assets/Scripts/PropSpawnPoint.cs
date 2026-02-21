@@ -34,7 +34,7 @@ public class PropSpawnPoint : MonoBehaviour
     {
         if (spawnedProp != null)
         {
-            Destroy(spawnedProp);
+            DestroyImmediate(spawnedProp);
             spawnedProp = null;
         }
     }
