@@ -40,6 +40,10 @@ public class UIManager : MonoBehaviour
     public float fadeInDuration = 1.5f;
     [Tooltip("Enable fade-in at scene start")]
     public bool fadeInOnStart = true;
+    [Tooltip("Initial hint text shown during fade-in")]
+    public TextMeshProUGUI initialHintText;
+    [Tooltip("Message shown at game start")]
+    public string initialHintMessage = "I should remember everything in this hallway...";
 
     private Coroutine feedbackCoroutine;
     private static UIManager instance;
@@ -78,14 +82,45 @@ public class UIManager : MonoBehaviour
         whiteFadePanel.color = color;
         whiteFadePanel.gameObject.SetActive(true);
 
-        yield return new WaitForSeconds(0.2f); // Brief delay before fading
+        // Show initial hint text
+        if (initialHintText != null)
+        {
+            initialHintText.text = initialHintMessage;
+            initialHintText.gameObject.SetActive(true);
+            Color textColor = initialHintText.color;
+            textColor.a = 1f;
+            initialHintText.color = textColor;
+        }
+
+        yield return new WaitForSeconds(2f); // Show hint for 2 seconds
+
+        // Fade out hint text
+        if (initialHintText != null)
+        {
+            float elapsed = 0f;
+            float textFadeDuration = 0.5f;
+            Color textColor = initialHintText.color;
+            
+            while (elapsed < textFadeDuration)
+            {
+                elapsed += Time.deltaTime;
+                float t = elapsed / textFadeDuration;
+                textColor.a = Mathf.Lerp(1f, 0f, t);
+                initialHintText.color = textColor;
+                yield return null;
+            }
+            
+            initialHintText.gameObject.SetActive(false);
+        }
+
+        yield return new WaitForSeconds(0.2f); // Brief delay before fading background
 
         // Fade from white to transparent
-        float elapsed = 0f;
-        while (elapsed < fadeInDuration)
+        float elapsed2 = 0f;
+        while (elapsed2 < fadeInDuration)
         {
-            elapsed += Time.deltaTime;
-            float t = elapsed / fadeInDuration;
+            elapsed2 += Time.deltaTime;
+            float t = elapsed2 / fadeInDuration;
             color.a = Mathf.Lerp(1f, 0f, t);
             whiteFadePanel.color = color;
             yield return null;
@@ -93,8 +128,6 @@ public class UIManager : MonoBehaviour
 
         color.a = 0f;
         whiteFadePanel.color = color;
-        
-        Debug.Log("[UIManager] Fade-in complete");
     }
 
     public void ShowCorrectFeedback()

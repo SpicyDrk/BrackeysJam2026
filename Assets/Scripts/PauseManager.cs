@@ -16,8 +16,18 @@ public class PauseManager : MonoBehaviour
     public Button resumeButton;
     [Tooltip("Restart button")]
     public Button restartButton;
+    [Tooltip("Hint button")]
+    public Button hintButton;
     [Tooltip("Quit button (optional)")]
     public Button quitButton;
+    [Tooltip("Volume slider")]
+    public Slider volumeSlider;
+
+    [Header("Hint Panel")]
+    [Tooltip("Panel with detailed instructions")]
+    public GameObject hintPanel;
+    [Tooltip("Close hint button")]
+    public Button closeHintButton;
 
     [Header("Fade Panel")]
     [Tooltip("White panel for fade to white on restart")]
@@ -56,16 +66,42 @@ public class PauseManager : MonoBehaviour
             restartButton.onClick.AddListener(RestartLevel);
         }
 
+        if (hintButton != null)
+        {
+            hintButton.onClick.RemoveAllListeners();
+            hintButton.onClick.AddListener(ShowHint);
+        }
+
+        if (closeHintButton != null)
+        {
+            closeHintButton.onClick.RemoveAllListeners();
+            closeHintButton.onClick.AddListener(HideHint);
+        }
+
         if (quitButton != null)
         {
             quitButton.onClick.RemoveAllListeners();
             quitButton.onClick.AddListener(QuitGame);
         }
 
+        // Setup volume slider
+        if (volumeSlider != null)
+        {
+            volumeSlider.value = AudioListener.volume;
+            volumeSlider.onValueChanged.RemoveAllListeners();
+            volumeSlider.onValueChanged.AddListener(SetVolume);
+        }
+
         // Make sure pause menu starts hidden
         if (pauseMenuPanel != null)
         {
             pauseMenuPanel.SetActive(false);
+        }
+
+        // Make sure hint panel starts hidden
+        if (hintPanel != null)
+        {
+            hintPanel.SetActive(false);
         }
 
         // Setup white fade panel
@@ -84,8 +120,9 @@ public class PauseManager : MonoBehaviour
         // Don't allow pausing during restart
         if (isRestarting || !enablePause) return;
 
-        // Toggle pause with ESC key using new Input System
-        if (Keyboard.current != null && Keyboard.current.escapeKey.wasPressedThisFrame)
+        // Toggle pause with ESC or P key (P key for browser compatibility)
+        if (Keyboard.current != null && 
+            (Keyboard.current.escapeKey.wasPressedThisFrame || Keyboard.current.pKey.wasPressedThisFrame))
         {
             if (isPaused)
                 Resume();
@@ -174,6 +211,23 @@ public class PauseManager : MonoBehaviour
         #else
             Application.Quit();
         #endif
+    }
+
+    public void SetVolume(float volume)
+    {
+        AudioListener.volume = volume;
+    }
+
+    public void ShowHint()
+    {
+        if (hintPanel != null)
+            hintPanel.SetActive(true);
+    }
+
+    public void HideHint()
+    {
+        if (hintPanel != null)
+            hintPanel.SetActive(false);
     }
 
     public bool IsPaused() => isPaused;
