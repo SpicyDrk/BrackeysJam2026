@@ -1,4 +1,5 @@
 using UnityEngine;
+using UnityEngine.UI;
 using TMPro;
 using System.Collections;
 
@@ -32,6 +33,14 @@ public class UIManager : MonoBehaviour
     [Tooltip("Text showing current hallway matches reference or not")]
     public TextMeshProUGUI hallwayStateText;
 
+    [Header("Fade In Settings")]
+    [Tooltip("White panel for fade-in effect at scene start")]
+    public Image whiteFadePanel;
+    [Tooltip("Duration of fade-in from white")]
+    public float fadeInDuration = 1.5f;
+    [Tooltip("Enable fade-in at scene start")]
+    public bool fadeInOnStart = true;
+
     private Coroutine feedbackCoroutine;
     private static UIManager instance;
     public static UIManager Instance => instance;
@@ -53,6 +62,39 @@ public class UIManager : MonoBehaviour
         
         if (debugText != null)
             debugText.gameObject.SetActive(showDebugInfo);
+
+        // Fade in from white at scene start
+        if (fadeInOnStart && whiteFadePanel != null)
+        {
+            StartCoroutine(FadeInFromWhite());
+        }
+    }
+
+    private IEnumerator FadeInFromWhite()
+    {
+        // Start with white panel fully opaque
+        Color color = whiteFadePanel.color;
+        color.a = 1f;
+        whiteFadePanel.color = color;
+        whiteFadePanel.gameObject.SetActive(true);
+
+        yield return new WaitForSeconds(0.2f); // Brief delay before fading
+
+        // Fade from white to transparent
+        float elapsed = 0f;
+        while (elapsed < fadeInDuration)
+        {
+            elapsed += Time.deltaTime;
+            float t = elapsed / fadeInDuration;
+            color.a = Mathf.Lerp(1f, 0f, t);
+            whiteFadePanel.color = color;
+            yield return null;
+        }
+
+        color.a = 0f;
+        whiteFadePanel.color = color;
+        
+        Debug.Log("[UIManager] Fade-in complete");
     }
 
     public void ShowCorrectFeedback()
@@ -154,5 +196,31 @@ public class UIManager : MonoBehaviour
         {
             debugText.gameObject.SetActive(showDebugInfo);
         }
+    }
+
+    /// <summary>
+    /// Fades the white panel from current state to target alpha
+    /// </summary>
+    public IEnumerator FadeWhitePanel(float startAlpha, float endAlpha, float duration)
+    {
+        if (whiteFadePanel == null) yield break;
+
+        float elapsed = 0f;
+        Color color = whiteFadePanel.color;
+        color.a = startAlpha;
+        whiteFadePanel.color = color;
+        whiteFadePanel.gameObject.SetActive(true);
+
+        while (elapsed < duration)
+        {
+            elapsed += Time.deltaTime;
+            float t = elapsed / duration;
+            color.a = Mathf.Lerp(startAlpha, endAlpha, t);
+            whiteFadePanel.color = color;
+            yield return null;
+        }
+
+        color.a = endAlpha;
+        whiteFadePanel.color = color;
     }
 }

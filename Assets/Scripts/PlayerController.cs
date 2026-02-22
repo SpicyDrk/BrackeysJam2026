@@ -58,6 +58,10 @@ public class PlayerController : MonoBehaviour
 
     private void Update()
     {
+        // Don't process input while paused
+        if (PauseManager.Instance != null && PauseManager.Instance.IsPaused())
+            return;
+
         CheckGround();
         Move();
         Look();

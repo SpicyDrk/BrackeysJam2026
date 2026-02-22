@@ -39,7 +39,7 @@ public class HallwayManager : MonoBehaviour
     [Header("Game Progress")]
     private int currentStreak = 0;
     private int bestStreak = 0;
-    private const int STREAK_TO_WIN = 5;
+    private const int STREAK_TO_WIN = 8;
 
     [Header("Debug")]
     [SerializeField] private bool debugMode = true;
@@ -88,6 +88,10 @@ public class HallwayManager : MonoBehaviour
 
     private void Update()
     {
+        // Don't process decisions while paused
+        if (PauseManager.Instance != null && PauseManager.Instance.IsPaused())
+            return;
+
         if (player == null || decisionMade) return;
 
         // Check forward plane (detect crossing along world X axis)
@@ -242,6 +246,15 @@ public class HallwayManager : MonoBehaviour
     private void TriggerEndingSequence()
     {
         Log("Triggering ending sequence - transitioning to perfect corridor");
+
+        // Fade out ambient music and atmospheric sounds (keeps footsteps active)
+        if (SoundManager.Instance != null)
+        {
+            SoundManager.Instance.FadeOutAmbientSounds(fadeTime: 3f);
+            // Also force stop all ambient audio sources to catch any rogue sources
+            SoundManager.Instance.StopAllAmbientAudioSources();
+            Log("Fading out ambient and atmospheric sounds");
+        }
 
         // Disable normal gameplay objects (hallway, decision planes, etc.)
         foreach (GameObject obj in disableOnWin)
