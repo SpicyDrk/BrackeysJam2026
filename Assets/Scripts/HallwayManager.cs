@@ -376,7 +376,7 @@ public class HallwayManager : MonoBehaviour
         }
         else
         {
-            shouldMatch = Random.value > 0.5f; // 50/50 for subsequent passes
+            shouldMatch = Random.value > 0.33f; // 66/33 for subsequent passes
         }
 
         Log($"=== PrepareNextLoop: shouldMatch={shouldMatch} ===");
